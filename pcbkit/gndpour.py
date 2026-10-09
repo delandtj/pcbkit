@@ -82,6 +82,8 @@ def main(argv):
         obst += [box(p.GetBoundingBox()) for p in seq(f.Pads())]
         obst += [box(z.GetBoundingBox()) for z in seq(f.Zones())]
     obst += [box(t.GetBoundingBox()) for t in seq(board.Tracks())]
+    # board-level rule areas that forbid vias (hole keepouts, reserved areas)
+    obst += [box(z.GetBoundingBox()) for z in seq(board.Zones()) if z.GetIsRuleArea() and z.GetDoNotAllowVias()]
     r = VIA_D / 2 + CLR
 
     def free(x, y):
