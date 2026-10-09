@@ -49,6 +49,8 @@ PY
 
 cd "$KRT_DIR"
 cur=$B
+# kept copper is not a rip-up candidate for the main pass
+[ ${#KEEP_GROUPS[@]} -eq 0 ] || export KICAD_RIP_PREEXISTING=0
 if [ ${#PLANES[@]} -gt 0 ]; then
     echo "== planes: $PLANES_DESC"
     "$KRT_PY" py_router/route_planes.py "$cur" "$WORK/1-planes.kicad_pcb" "${PLANES[@]}"
