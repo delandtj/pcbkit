@@ -52,7 +52,8 @@ def main(argv):
              var('PLANES_DESC', ', '.join('%s on %s' % nl for nl in zip(P['nets'], P['layers']))),
              var('GROUND_NET', g['net']),
              arr('GROUND', ['--nets', g['net'], '--power-nets', g['net'], '--power-nets-widths', g['width']]),
-             var('DIFF_N', len(K['diff']))]
+             var('DIFF_N', len(K['diff'])),
+             arr('KEEP_GROUPS', K.get('keep_groups', []))]
     for i, d in enumerate(K['diff']):
         lines.append(var('DIFF_DESC_%d' % i, d.get('desc', ' '.join(d['nets']))))
         lines.append(arr('DIFF_%d' % i, ['--nets', *d['nets'], '--track-width', d['width'],

@@ -159,6 +159,7 @@ via = [0.5, 0.2]
 track_width = 0.2
 same_net_pad_clearance = 0.15    # keeps vias out of SMD pads
 signal_layers = ["F.Cu", "B.Cu"]
+# keep_groups = ["hand"]   # groups whose tracks/vias krt-route does not strip
 route_extra = ["--ordering", "mps"]   # krt-route final pass only; $KRT_EXTRA adds to both
 power_nets = ["GND", "+3V3"]
 power_widths = [0.4, 0.4]

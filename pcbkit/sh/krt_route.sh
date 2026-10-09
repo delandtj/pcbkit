@@ -5,7 +5,9 @@
 #   pcbkit krt-route        # in the project dir: route a copy, copy the .kicad_pcb back
 #
 # Starts from the board as it is (hand placement kept). Existing tracks, vias
-# and copper zones are stripped first; rule areas and everything else stay.
+# and copper zones are stripped first; rule areas, items in the [krt]
+# keep_groups groups (scripted hand routes) and everything else stay. The
+# router sees the kept copper (--keep-input-copper).
 #
 # Chain (KRT README, #562): planes first ([krt] planes), then each [[krt.diff]]
 # pair class, then everything on [krt] signal_layers. KRT rewrites the
@@ -29,13 +31,18 @@ for ext in kicad_pcb kicad_pro kicad_dru; do
     if [ -f "$PROJ/$NAME.$ext" ]; then cp "$PROJ/$NAME.$ext" "$WORK/"; fi
 done
 B=$WORK/$NAME.kicad_pcb
-"$KRT_PY" - "$B" <<'PY'
+"$KRT_PY" - "$B" "${KEEP_GROUPS[@]}" <<'PY'
 import sys, pcbnew
 b = pcbnew.LoadBoard(sys.argv[1])
 t = b.Tracks(); z = b.Zones()   # index: SWIG iterators break on Python 3.14
 # rule areas (keepouts) are zones too: they stay, only copper zones go
+keep = set(sys.argv[2:])   # [krt] keep_groups: hand-routed copper stays
+def kept(it):
+    g = it.GetParentGroup()
+    return g is not None and g.GetName() in keep
 for it in [t[i] for i in range(len(t))] + [z[i] for i in range(len(z)) if not z[i].GetIsRuleArea()]:
-    b.Delete(it)
+    if not kept(it):
+        b.Delete(it)
 b.Save(sys.argv[1])
 print("stripped old copper")
 PY
