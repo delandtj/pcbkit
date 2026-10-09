@@ -1,0 +1,5 @@
+#!/bin/sh
+# pcbkit dispatcher: runs the package with the KiCad python (PCBKIT_PYTHON,
+# default python3, which must be able to import pcbnew).
+here=$(dirname "$(readlink -f "$0")")
+PYTHONPATH="$here/..${PYTHONPATH:+:$PYTHONPATH}" exec "${PCBKIT_PYTHON:-python3}" -m pcbkit "$@"

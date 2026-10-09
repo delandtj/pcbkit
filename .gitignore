@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# fab outputs (pcbkit jlcfab)
+fab/
+
+# KiCad backups, locks, caches
+*-backups/
+*.lck
+*.kicad_prl
+fp-info-cache
+_autosave-*
+\#auto_saved_files\#
