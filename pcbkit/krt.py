@@ -56,5 +56,5 @@ def main(argv):
     for i, d in enumerate(K['diff']):
         lines.append(var('DIFF_DESC_%d' % i, d.get('desc', ' '.join(d['nets']))))
         lines.append(arr('DIFF_%d' % i, ['--nets', *d['nets'], '--track-width', d['width'],
-                                         '--diff-pair-gap', d['gap']]))
+                                         '--diff-pair-gap', d['gap'], *d.get('extra', [])]))
     print('\n'.join(lines))

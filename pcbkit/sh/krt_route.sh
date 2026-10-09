@@ -5,7 +5,7 @@
 #   pcbkit krt-route        # in the project dir: route a copy, copy the .kicad_pcb back
 #
 # Starts from the board as it is (hand placement kept). Existing tracks, vias
-# and zones are stripped first; nothing else is touched.
+# and copper zones are stripped first; rule areas and everything else stay.
 #
 # Chain (KRT README, #562): planes first ([krt] planes), then each [[krt.diff]]
 # pair class, then everything on [krt] signal_layers. KRT rewrites the
@@ -33,7 +33,8 @@ B=$WORK/$NAME.kicad_pcb
 import sys, pcbnew
 b = pcbnew.LoadBoard(sys.argv[1])
 t = b.Tracks(); z = b.Zones()   # index: SWIG iterators break on Python 3.14
-for it in [t[i] for i in range(len(t))] + [z[i] for i in range(len(z))]:
+# rule areas (keepouts) are zones too: they stay, only copper zones go
+for it in [t[i] for i in range(len(t))] + [z[i] for i in range(len(z)) if not z[i].GetIsRuleArea()]:
     b.Delete(it)
 b.Save(sys.argv[1])
 print("stripped old copper")

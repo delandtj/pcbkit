@@ -170,6 +170,7 @@ desc = "USB 0.25/0.15"
 nets = ["*USB*D+", "*USB*D-"]
 width = 0.25
 gap = 0.15
+# extra = ["--diff-pair-intra-match", "--length-match-tolerance", "0.15"]  # more route_diff.py flags
 ```
 
 A complete real-world config is in `examples/granite_controller/pcbkit.toml`.
