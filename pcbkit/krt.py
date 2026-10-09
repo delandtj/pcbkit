@@ -37,7 +37,8 @@ def main(argv):
     work = os.environ.get('KRT_WORK') or os.path.expanduser(K['work' if mode == 'route' else 'rework']) \
         or os.path.expanduser('~/.cache/pcbkit/%s/%s' % (name, mode))
     via_d, via_h = K['via']
-    common = ['--clearance', K['clearance'], '--via-size', via_d, '--via-drill', via_h, '--strict-sizes',
+    # clearance 0 / unset: no --clearance flag, KRT honours the net classes
+    common = (['--clearance', K['clearance']] if K.get('clearance') else []) + ['--via-size', via_d, '--via-drill', via_h, '--strict-sizes',
               '--same-net-pad-clearance', K['same_net_pad_clearance']]
     sig = ['--layers', *K['signal_layers'], '--track-width', K['track_width'],
            '--escalation', 'off', '--keep-input-copper']

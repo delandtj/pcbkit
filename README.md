@@ -132,7 +132,7 @@ legends = { J3 = ["+", "-"] }    # one string per numbered pad, in pad order
 name_height = 1.0
 legend_height = 1.0
 thickness = 0.15
-clearance = 0.2
+clearance = 0.2          # 0 = no --clearance flag, KRT uses the net class clearances
 group = "conn-labels"
 
 [viaout]
