@@ -150,7 +150,7 @@ skip_dnp = true
 corrections = [["^MyConn_1x04$", "", 180, 0.0, 0.0]]
 
 [krt]
-dir = "~/src/KiCadRoutingTools"  # or $KRT_DIR
+dir = "~/Electronics/krt/KiCadRoutingTools"  # or $KRT_DIR
 python = ""                      # or $KRT_PY; default <dir>/../venv/bin/python
 work = ""                        # or $KRT_WORK; default ~/.cache/pcbkit/<name>/route
 rework = ""                      # krt-reroute scratch; default .../reroute

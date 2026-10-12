@@ -75,7 +75,7 @@ DEFAULTS = {
         'corrections': [],      # [pattern, lcsc or "", rot, dx, dy], checked before the built-in table
     },
     'krt': {
-        'dir': '', 'python': '', 'work': '', 'rework': '',
+        'dir': '~/Electronics/krt/KiCadRoutingTools', 'python': '', 'work': '', 'rework': '',
         'clearance': 0.2, 'via': [0.5, 0.2], 'track_width': 0.2,
         'same_net_pad_clearance': 0.15,
         'signal_layers': ['F.Cu', 'B.Cu'],

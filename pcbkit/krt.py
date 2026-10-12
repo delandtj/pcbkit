@@ -3,7 +3,8 @@ sh/krt_reroute.sh), from [krt] in pcbkit.toml.
 
 Usage: pcbkit krt-env route|reroute     (prints bash assignments to eval)
 
-KRT is located by KRT_DIR (env) or [krt] dir; its python (a venv that can
+KRT is located by KRT_DIR (env) or [krt] dir, default
+~/Electronics/krt/KiCadRoutingTools; its python (a venv that can
 import pcbnew) by KRT_PY or [krt] python, default <dir>/../venv/bin/python.
 The scratch dir (outside the project: KRT rewrites the .kicad_pro next to
 the board) is KRT_WORK or [krt] work / rework, default
