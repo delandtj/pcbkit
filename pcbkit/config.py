@@ -79,7 +79,7 @@ DEFAULTS = {
         'clearance': 0.2, 'via': [0.5, 0.2], 'track_width': 0.2,
         'same_net_pad_clearance': 0.15,
         'signal_layers': ['F.Cu', 'B.Cu'],
-        'planes': {'nets': [], 'layers': [], 'via': [0.6, 0.3]},
+        'planes': {'nets': [], 'layers': [], 'via': [0.6, 0.3], 'thermal_relief': True},
         'diff': [],             # [{desc, nets, width, gap}]
         'power_nets': [], 'power_widths': [],
         'route_extra': [],

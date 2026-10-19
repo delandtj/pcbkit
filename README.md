@@ -164,6 +164,8 @@ route_extra = ["--ordering", "mps"]   # krt-route final pass only; $KRT_EXTRA ad
 power_nets = ["GND", "+3V3"]
 power_widths = [0.4, 0.4]
 planes = { nets = ["GND", "+3V3"], layers = ["In1.Cu", "In2.Cu"], via = [0.6, 0.3] }
+# planes connect THT pads with thermal-relief spokes (KRT --thermal-relief);
+# add thermal_relief = false to the table for solid connections
 ground = { net = "GND", width = 0.4 }
 
 [[krt.diff]]
