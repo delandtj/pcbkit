@@ -47,6 +47,10 @@ def main(argv):
     P = K['planes']
     planes = ['--nets', *P['nets'], '--plane-layers', *P['layers'],
               '--via-size', P['via'][0], '--via-drill', P['via'][1]] if P['nets'] else []
+    # Spokes, not solid copper: a THT pad sunk into a full inner plane will not
+    # take solder from a hand iron. KRT writes solid unless asked.
+    if planes and P.get('thermal_relief', True):
+        planes.append('--thermal-relief')
     g = K['ground']
     lines = [var('PROJ', cfg['_root']), var('NAME', name), var('KRT_DIR', kdir), var('KRT_PY', kpy),
              var('WORK', work), arr('COMMON', common), arr('SIG', sig), arr('POWER', power),
