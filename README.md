@@ -28,6 +28,8 @@ wrappers.
 | gndpour | `<in> <out>` | ground pours on the outer layers (inset from the short edges for panel rails) and a stitching via grid in a re-runnable group; fills zones |
 | jlcfab | `[board] [out_dir]` | Gerbers + drill zip, BOM and CPL for JLCPCB assembly, with the KiCad -> EasyEDA rotation/centroid corrections and a list of parts to check |
 | render | `<board> <out.png> x0 y0 x1 y1 [--rpt drc.rpt] [NET ...]` | region PNG: F.Cu red, B.Cu blue, highlighted nets, DRC opens and violations |
+| view | `<board> <out.png> x0 y0 x1 y1 [NET ...]` | region PNG with every copper layer: pads, tracks on F.Cu / In1 / B.Cu, zone fills, labelled vias, 1 mm grid. For reading a routing problem |
+| handroute | `<board> <plan.py> [--save [out]]` | scripted hand routing: a plan of segment/via deletes and H/V/45 tracks and vias is applied to a copy, zones refilled, kicad-cli DRC run and the region's clearance/short/unconnected items listed; `--save` writes it back. See `pcbkit handroute -h` for the op list |
 | krt-route | (in the project dir) | first-pass routing with [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools): strip copper, planes, diff pairs, everything else |
 | krt-reroute | `[--keep] NET ...` (in the project dir) | targeted KRT pass on named nets, then a ground pass and a zone refill |
 | krt-env | `route\|reroute` | prints the bash settings the two KRT wrappers eval |

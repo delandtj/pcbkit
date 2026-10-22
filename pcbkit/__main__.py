@@ -12,6 +12,8 @@ Usage: pcbkit [--config FILE] <tool> [args]     (or python3 -m pcbkit ...)
   prune       <board.kicad_pcb> <drc.rpt>
   jlcfab      [board.kicad_pcb] [out_dir]
   render      <board.kicad_pcb> <out.png> x0 y0 x1 y1 [--rpt drc.rpt] [NET ...]
+  view        <board.kicad_pcb> <out.png> x0 y0 x1 y1 [NET ...]
+  handroute   <board.kicad_pcb> <plan.py> [--save [out.kicad_pcb]]
   krt-route                                   (in the project dir)
   krt-reroute [--keep] NET [NET ...]          (in the project dir)
   krt-env     route|reroute
@@ -25,7 +27,8 @@ import sys
 
 MODULES = {'mkboard': 'mkboard', 'outline': 'outline', 'setrules': 'setrules', 'silk': 'silk',
            'connlabels': 'connlabels', 'viaout': 'viaout', 'gndpour': 'gndpour', 'prune': 'prune',
-           'jlcfab': 'jlcfab', 'render': 'pcbtool', 'krt-env': 'krt'}
+           'jlcfab': 'jlcfab', 'render': 'pcbtool', 'view': 'view', 'handroute': 'handroute',
+           'krt-env': 'krt'}
 SCRIPTS = {'krt-route': 'krt_route.sh', 'krt-reroute': 'krt_reroute.sh'}
 
 
