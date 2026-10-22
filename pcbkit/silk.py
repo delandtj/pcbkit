@@ -2,20 +2,21 @@
 
 Usage: pcbkit silk <in.kicad_pcb> <out.kicad_pcb>
 
-- Value fields go to F.Fab (assembly does not need them on silk).
+- Value fields go to F.Fab / B.Fab (assembly does not need them on silk).
 - Refs starting with a hide_prefixes entry (mounting holes) are hidden.
 - Small parts (courtyard < small_area mm^2: 0402/0603 R/C/L, small diodes,
-  resistor arrays) get their silk reference hidden; the F.Fab
+  resistor arrays) get their silk reference hidden; the Fab
   ${REFERENCE} text stays for the assembly drawing.
-- Footprint silk lines thinner than min_line are widened to it (JLC minimum
-  line width 0.15 mm; library parts use 0.12 mm).
+- Footprint silk lines and texts thinner than min_line are widened to it
+  (JLC minimum line width 0.15 mm; library parts use 0.12 mm).
 - Every other reference is set to size / thickness (JLC minimum text height
-  1.0 / 0.15 mm) and moved to the first spot around its courtyard (above,
-  below, right, left), else inside its own courtyard, that is inside the
-  board, off every pad and silk outline, off other parts' courtyards and off
-  already-placed references. Prefixes in `order` go first (connectors, ICs);
-  `relax_prefixes` parts also try vertical text and then ignore courtyards.
-  If none is free, it is hidden.
+  1.0 / 0.15 mm), put on the silk layer of the part's own side, and moved
+  to the first spot around its courtyard (above, below, right, left), else
+  inside its own courtyard, that is inside the board, off every pad, silk
+  outline, other part's courtyard and already-placed reference on that
+  side (through-hole pads count on both sides). Prefixes in `order` go
+  first (connectors, ICs); `relax_prefixes` parts also try vertical text
+  and then ignore courtyards. If none is free, it is hidden.
 - Parts whose courtyard is not within the board's x range (right_overhang
   mm of slack on the right) are hidden.
 Write <out> to a scratch directory, as for the other tools.
@@ -63,46 +64,58 @@ def main(argv):
     board = pcbnew.LoadBoard(src)
     FPS = seq(board.Footprints())
     edge = box(board.GetBoardEdgesBoundingBox())
-    pads, courts, segs = [], {}, []
+    SILK = {'F': pcbnew.F_SilkS, 'B': pcbnew.B_SilkS}
+    FAB = {'F': pcbnew.F_Fab, 'B': pcbnew.B_Fab}
+    COPPER = {'F': pcbnew.F_Cu, 'B': pcbnew.B_Cu}
+    # obstacles per side: pads (THT on both), silk outlines, courtyards
+    pads, courts, segs = {'F': [], 'B': []}, {}, {'F': [], 'B': []}
     for fp in FPS:
-        courts[fp.GetReference()] = cbox(fp)
-        pads += [box(p.GetBoundingBox()) for p in seq(fp.Pads())]
+        courts[fp.GetReference()] = (cbox(fp), 'B' if fp.IsFlipped() else 'F')
+        for p in seq(fp.Pads()):
+            for s in 'FB':
+                if p.IsOnLayer(COPPER[s]):
+                    pads[s].append(box(p.GetBoundingBox()))
         for g in seq(fp.GraphicalItems()):
             it = g.Cast()
-            if it.GetLayer() not in (pcbnew.F_SilkS, pcbnew.B_SilkS) or not isinstance(it, pcbnew.PCB_SHAPE):
+            if it.GetLayer() not in (pcbnew.F_SilkS, pcbnew.B_SilkS):
+                continue
+            if isinstance(it, pcbnew.PCB_TEXT):
+                if it.GetTextThickness() < pcbnew.FromMM(MIN_LINE):
+                    it.SetTextThickness(pcbnew.FromMM(MIN_LINE))
+                continue
+            if not isinstance(it, pcbnew.PCB_SHAPE):
                 continue
             if it.GetWidth() < pcbnew.FromMM(MIN_LINE):
                 it.SetWidth(pcbnew.FromMM(MIN_LINE))
-            if it.GetLayer() != pcbnew.F_SilkS:
-                continue
+            side_segs = segs['F' if it.GetLayer() == pcbnew.F_SilkS else 'B']
             st = it.GetShape()
             if st == pcbnew.SHAPE_T_SEGMENT:
                 q = [it.GetStart(), it.GetEnd()]
-                segs.append(((mm(q[0].x), mm(q[0].y)), (mm(q[1].x), mm(q[1].y))))
+                side_segs.append(((mm(q[0].x), mm(q[0].y)), (mm(q[1].x), mm(q[1].y))))
             elif st == pcbnew.SHAPE_T_POLY:
                 o = it.GetPolyShape().Outline(0)
                 pts = [o.CPoint(k) for k in range(o.PointCount())]
                 for k in range(len(pts)):
                     a1, a2 = pts[k], pts[(k + 1) % len(pts)]
-                    segs.append(((mm(a1.x), mm(a1.y)), (mm(a2.x), mm(a2.y))))
+                    side_segs.append(((mm(a1.x), mm(a1.y)), (mm(a2.x), mm(a2.y))))
             else:                                   # rect, arc, circle: bbox edges
                 x0, y0, x1, y1 = box(it.GetBoundingBox())
-                segs += [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)),
-                         ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))]
+                side_segs += [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)),
+                              ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))]
 
-    taken = []
+    taken = {'F': [], 'B': []}
     hidden = moved = 0
     order = S['order']
     rank = {p: i for i, p in enumerate(order)}
     hide = tuple(S['hide_prefixes'])
     relax = tuple(S['relax_prefixes'])
     for fp in sorted(FPS, key=lambda f: rank.get(f.GetReference()[0], len(order))):
-        val = fp.Value()
-        if val.GetLayer() == pcbnew.F_SilkS:
-            val.SetLayer(pcbnew.F_Fab)
-        ref = fp.Reference()
         r = fp.GetReference()
-        c = courts[r]
+        c, side = courts[r]
+        val = fp.Value()
+        if val.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS):
+            val.SetLayer(FAB[side])
+        ref = fp.Reference()
         if hide and r.startswith(hide):
             ref.SetVisible(False)
             continue
@@ -113,20 +126,28 @@ def main(argv):
             hidden += 1
             continue
         ref.SetVisible(True)
-        ref.SetLayer(pcbnew.F_SilkS)
+        ref.SetLayer(SILK[side])
         ref.SetTextSize(pcbnew.VECTOR2I_MM(SIZE, SIZE))
         ref.SetTextThickness(pcbnew.FromMM(THICK))
         ref.SetTextAngle(pcbnew.EDA_ANGLE(0, pcbnew.DEGREES_T))
         cx, cy = (c[0] + c[2]) / 2, (c[1] + c[3]) / 2
         cands = [(cx, c[1] - 0.7), (cx, c[3] + 0.7), (cx, c[3] + 0.95), (cx, c[3] + 1.2),
                  (c[2] + 0.4 + len(r) * 0.35, cy), (c[0] - 0.4 - len(r) * 0.35, cy)]
-        # then anywhere inside the part's own courtyard, clear of pads (connector bodies)
+        # then anywhere inside the part's own courtyard, clear of pads (connector
+        # bodies, the channel round a QFN thermal pad), edges first
         inside = []
         yy = c[1] + 0.6
         while yy <= c[3] - 0.6:
-            inside.append((cx, yy))
+            xx = c[0] + 0.6
+            while xx <= c[2] - 0.6:
+                inside.append((xx, yy))
+                xx += 0.25
             yy += 0.25
-        cands += sorted(inside, key=lambda q: -abs(q[1] - cy))
+        inside.sort(key=lambda q: (-abs(q[1] - cy), abs(q[0] - cx)))
+        cands += inside
+        # courtyards that already overlap this part's own (a module outline
+        # footprint around everything) are no obstacle
+        blockers = [cc for rr, (cc, ss) in courts.items() if rr != r and ss == side and not overlap(cc, c, 0.0)]
 
         def fits(x, y, ang, strict):
             ref.SetTextAngle(pcbnew.EDA_ANGLE(ang, pcbnew.DEGREES_T))
@@ -135,22 +156,22 @@ def main(argv):
             if not (edge[0] + 0.3 <= t[0] and t[2] <= edge[2] - 0.3 and
                     edge[1] + 0.3 <= t[1] and t[3] <= edge[3] - 0.3):
                 return False
-            if any(overlap(t, p, GAP) for p in pads) or any(seg_hits(t, sg, GAP) for sg in segs):
+            if any(overlap(t, p, GAP) for p in pads[side]) or any(seg_hits(t, sg, GAP) for sg in segs[side]):
                 return False
-            if strict and any(overlap(t, cc, 0.0) for rr, cc in courts.items() if rr != r):
+            if strict and any(overlap(t, cc, 0.0) for cc in blockers):
                 return False
-            if any(overlap(t, o, GAP) for o in taken):
+            if any(overlap(t, o, GAP) for o in taken[side]):
                 return False
-            taken.append(t)
+            taken[side].append(t)
             return True
 
-        tries = [(x, y, 0, True) for x, y in cands]
+        tries = [(x, y, 0, True) for x, y in cands] + [(x, y, 90, True) for x, y in inside]
         if relax and r.startswith(relax):
             # connectors: their labels matter for cabling, so relax step by step
-            side = [(c[0] - 0.8, cy, 90), (c[2] + 0.8, cy, 90)]
-            tries += [(x, y, a, True) for x, y, a in side]
+            vert = [(c[0] - 0.8, cy, 90), (c[2] + 0.8, cy, 90)]
+            tries += [(x, y, a, True) for x, y, a in vert]
             tries += [(x, y, 0, False) for x, y in cands]
-            tries += [(x, y, a, False) for x, y, a in side]
+            tries += [(x, y, a, False) for x, y, a in vert]
         if any(fits(*t) for t in tries):
             moved += 1
         else:

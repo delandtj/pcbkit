@@ -25,8 +25,8 @@ def box(b):
 
 
 def cbox(fp):
-    """Courtyard (or body) box of a footprint in mm."""
-    c = fp.GetCourtyard(pcbnew.F_CrtYd)
+    """Courtyard (or body) box of a footprint in mm, on the part's own side."""
+    c = fp.GetCourtyard(pcbnew.B_CrtYd if fp.IsFlipped() else pcbnew.F_CrtYd)
     return box(c.BBox()) if c.OutlineCount() else box(fp.GetBoundingBox(False))
 
 
