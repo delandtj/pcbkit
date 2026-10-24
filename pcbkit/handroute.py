@@ -14,6 +14,9 @@ plan.py defines OPS = [...] and optionally REGION = (x0, y0, x1, y1) in mm:
   ('trk', net, layer, [(x, y), ...], width)      each leg must be H, V or 45
   ('via', net, (x, y), size, drill)
   ('move', ref, (dx, dy))                         footprint by dx, dy mm
+  ('rot', ref, degrees)                          footprint turned by degrees
+                                                 (counter-clockwise, KiCad sense)
+                                                 about its own position
 Layers are KiCad names (F.Cu, B.Cu, or the user names set by setrules,
 e.g. SIG). Net names as the board stores them (a '/' inside a label is
 '{slash}', e.g. 'Net-(U1-TRACK{slash}SS1)').
@@ -104,6 +107,13 @@ def apply(b, ops):
                 print('!! move', ref, 'not found')
             else:
                 fp.Move(pcbnew.VECTOR2I(pcbnew.FromMM(dx), pcbnew.FromMM(dy)))
+        elif k == 'rot':
+            _, ref, deg = op
+            fp = b.FindFootprintByReference(ref)
+            if fp is None:
+                print('!! rot', ref, 'not found')
+            else:
+                fp.SetOrientationDegrees(fp.GetOrientationDegrees() + deg)
         else:
             raise SystemExit('bad op ' + repr(op))
 
