@@ -13,6 +13,7 @@ plan.py defines OPS = [...] and optionally REGION = (x0, y0, x1, y1) in mm:
                                                  with an end in the region
   ('trk', net, layer, [(x, y), ...], width)      each leg must be H, V or 45
   ('via', net, (x, y), size, drill)
+  ('move', ref, (dx, dy))                         footprint by dx, dy mm
 Layers are KiCad names (F.Cu, B.Cu, or the user names set by setrules,
 e.g. SIG). Net names as the board stores them (a '/' inside a label is
 '{slash}', e.g. 'Net-(U1-TRACK{slash}SS1)').
@@ -96,6 +97,13 @@ def apply(b, ops):
         elif k == 'via':
             _, net, (x, y), size, drill = op
             T.add_via(b, net, x, y, size, drill)
+        elif k == 'move':
+            _, ref, (dx, dy) = op
+            fp = b.FindFootprintByReference(ref)
+            if fp is None:
+                print('!! move', ref, 'not found')
+            else:
+                fp.Move(pcbnew.VECTOR2I(pcbnew.FromMM(dx), pcbnew.FromMM(dy)))
         else:
             raise SystemExit('bad op ' + repr(op))
 
