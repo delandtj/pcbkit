@@ -19,7 +19,9 @@ field are left out of the BOM and CPL. CPL coordinates are absolute board
 mm with Y flipped, same as the Gerbers. Through-hole parts use the centre of
 their pads (their footprint origin is usually pin 1); SMD parts use the
 footprint origin. The corrections ([jlcfab] corrections, then
-pcbkit.jlc.CORRECTIONS) then move that to the EasyEDA origin.
+pcbkit.jlc.CORRECTIONS) then move that to the EasyEDA origin. Bottom-side
+rotations are written as JLC reads them, seen from below: 180 - r, then the
+correction (as KiBot's mirror_bottom); check them in the JLC preview.
 """
 import csv
 import math
@@ -93,19 +95,29 @@ def main(argv):
             x, y = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
         else:
             x, y = mm(fp.GetPosition().x), mm(fp.GetPosition().y)
-        rot = fp.GetOrientationDegrees()
+        kicad_rot = fp.GetOrientationDegrees()
+        # JLC reads a bottom-side rotation as seen from below (board turned
+        # over left to right). KiCad keeps a flipped footprint as the library
+        # mirrored in y, then rotated by its orientation r; seen from below
+        # that is the library rotated by 180 - r. Same rule as KiBot's
+        # mirror_bottom and kicad-jlcpcb-tools. The correction (EasyEDA vs
+        # library frame) is then added in that view, as on top.
+        rot = (180 - kicad_rot) if fp.IsFlipped() else kicad_rot
         for pat, part, corr, dx, dy in corrections:
             if re.match(pat, fpname) and part in (None, lcsc):
                 if dx or dy:
-                    if fp.IsFlipped():
-                        sys.exit('%s: centroid offset on a bottom-side part, not handled' % ref)
-                    # KiCad orientation is CCW on screen with y down
-                    a = math.radians(rot)
-                    x += dx * math.cos(a) + dy * math.sin(a)
-                    y += -dx * math.sin(a) + dy * math.cos(a)
-                if corr or dx or dy:
-                    corrected.append('%s %s %s: rot %g -> %g, offset (%g, %g)'
-                                     % (ref, fpname, lcsc, rot % 360, (rot + corr) % 360, dx, dy))
+                    # the EasyEDA origin is a physical point: place it with
+                    # KiCad's own transform (library mirrored in y on the
+                    # bottom, then rotated; CCW on screen with y down)
+                    oy = -dy if fp.IsFlipped() else dy
+                    a = math.radians(kicad_rot)
+                    x += dx * math.cos(a) + oy * math.sin(a)
+                    y += -dx * math.sin(a) + oy * math.cos(a)
+                if corr or dx or dy or fp.IsFlipped():
+                    corrected.append('%s %s %s: rot %g%s -> %g, offset (%g, %g)'
+                                     % (ref, fpname, lcsc, kicad_rot % 360,
+                                        ' bottom' if fp.IsFlipped() else '',
+                                        (rot + corr) % 360, dx, dy))
                 rot += corr
                 break
         else:
